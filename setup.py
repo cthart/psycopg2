@@ -472,7 +472,7 @@ def find_mxDateTime():
     candidate_dirs = map(lambda d: os.path.join(d, 'mx', 'DateTime', 'mxDateTime'), sys.path)
     candidate_dirs = filter(lambda d: os.path.exists(os.path.join(d, 'mxDateTime.h')), candidate_dirs)
 
-    return candidate_dirs[0] if candidate_dirs else None
+    return candidate_dirs[0] if candidate_dirs else ''
 
 
 # let's start with macro definitions (the ones not already in setup.cfg)
