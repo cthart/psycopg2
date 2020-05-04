@@ -33,6 +33,7 @@ import os
 import sys
 import re
 import subprocess
+import sysconfig
 from setuptools import setup, Extension
 from distutils.command.build_ext import build_ext
 from distutils.sysconfig import get_python_inc
@@ -468,6 +469,13 @@ def is_py_64():
     import struct
     return struct.calcsize("P") > 4
 
+def find_mxDateTime():
+    """Look through the path for the mxDateTime include files"""
+    candidate_dirs = map(lambda d: os.path.join(d, 'mx', 'DateTime', 'mxDateTime'), sys.path)
+    candidate_dirs = filter(lambda d: os.path.exists(os.path.join(d, 'mxDateTime.h')), candidate_dirs)
+
+    return candidate_dirs[0] if candidate_dirs else None
+
 
 # let's start with macro definitions (the ones not already in setup.cfg)
 define_macros = []
@@ -530,7 +538,7 @@ mxincludedir = ''
 if parser.has_option('build_ext', 'mx_include_dir'):
     mxincludedir = parser.get('build_ext', 'mx_include_dir')
 if not mxincludedir:
-    mxincludedir = os.path.join(get_python_inc(plat_specific=1), "mx")
+    mxincludedir = find_mxDateTime()
 if mxincludedir.strip() and os.path.exists(mxincludedir):
     # Build the support for mx: we will check at runtime if it can be imported
     include_dirs.append(mxincludedir)
