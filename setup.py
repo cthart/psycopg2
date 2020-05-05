@@ -35,6 +35,7 @@ import re
 import subprocess
 from setuptools import setup, Extension
 from distutils.command.build_ext import build_ext
+from distutils.sysconfig import get_python_inc
 from distutils.ccompiler import get_default_compiler
 from distutils.errors import CompileError
 from distutils.util import get_platform
@@ -467,13 +468,6 @@ def is_py_64():
     import struct
     return struct.calcsize("P") > 4
 
-def find_mxDateTime():
-    """Look through the path for the mxDateTime include files"""
-    candidate_dirs = map(lambda d: os.path.join(d, 'mx', 'DateTime', 'mxDateTime'), sys.path)
-    candidate_dirs = filter(lambda d: os.path.exists(os.path.join(d, 'mxDateTime.h')), candidate_dirs)
-
-    return next(iter(candidate_dirs or ['']))
-
 
 # let's start with macro definitions (the ones not already in setup.cfg)
 define_macros = []
@@ -531,19 +525,21 @@ parser = configparser.ConfigParser()
 parser.read('setup.cfg')
 
 # check for mx package
-have_mxdatetime = False
 mxincludedir = ''
 if parser.has_option('build_ext', 'mx_include_dir'):
     mxincludedir = parser.get('build_ext', 'mx_include_dir')
 if not mxincludedir:
-    mxincludedir = find_mxDateTime()
+    # look for mxDateTime.h; prefer one located in venv
+    candidate_dirs = [os.path.join(d, 'mx', 'DateTime', 'mxDateTime') for d in sys.path] \
+                   + [os.path.join(get_python_inc(plat_specific=1), "mx")]
+    candidate_dirs = [d for d in candidate_dirs if os.path.exists(os.path.join(d, 'mxDateTime.h'))] or ['']
+    mxincludedir = candidate_dirs[0]
 if mxincludedir.strip() and os.path.exists(mxincludedir):
     # Build the support for mx: we will check at runtime if it can be imported
     include_dirs.append(mxincludedir)
     define_macros.append(('HAVE_MXDATETIME', '1'))
     sources.append('adapter_mxdatetime.c')
     depends.extend(['adapter_mxdatetime.h', 'typecast_mxdatetime.c'])
-    have_mxdatetime = True
     version_flags.append('mx')
 
 # generate a nice version string to avoid confusion when users report bugs
